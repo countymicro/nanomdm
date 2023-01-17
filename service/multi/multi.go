@@ -3,6 +3,7 @@ package multi
 
 import (
 	"context"
+	"sync"
 
 	"github.com/micromdm/nanomdm/log"
 	"github.com/micromdm/nanomdm/log/ctxlog"
@@ -35,8 +36,13 @@ func New(logger log.Logger, svcs ...service.CheckinAndCommandService) *MultiServ
 type errorRunner func(service.CheckinAndCommandService) error
 
 func (ms *MultiService) runOthers(ctx context.Context, r errorRunner) {
+	var wg sync.WaitGroup
+
 	for i, svc := range ms.svcs[1:] {
+		wg.Add(1)
 		go func(n int, s service.CheckinAndCommandService) {
+			defer wg.Done()
+
 			err := r(s)
 			if err != nil {
 				ctxlog.Logger(ctx, ms.logger).Info(
@@ -46,6 +52,7 @@ func (ms *MultiService) runOthers(ctx context.Context, r errorRunner) {
 			}
 		}(i+1, svc)
 	}
+	wg.Wait()
 }
 
 // RequestWithContext returns a clone of r and sets its context to ctx.
