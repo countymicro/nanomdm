@@ -6,11 +6,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	stdlog "log"
 	"net/http"
 
-	"github.com/micromdm/nanomdm/cmd/cli"
+	"github.com/micromdm/nanomdm/cli"
 	"github.com/micromdm/nanomdm/log/stdlogfmt"
 	"github.com/micromdm/nanomdm/mdm"
 )
@@ -21,7 +21,7 @@ var version = "unknown"
 func main() {
 	cliStorage := cli.NewStorage()
 	flag.Var(&cliStorage.Storage, "storage", "name of storage backend")
-	flag.Var(&cliStorage.DSN, "dsn", "data source name (e.g. connection string or path)")
+	flag.Var(&cliStorage.DSN, "storage-dsn", "data source name (e.g. connection string or path)")
 	flag.Var(&cliStorage.Options, "storage-options", "storage backend options")
 	var (
 		flVersion = flag.Bool("version", false, "print version")
@@ -119,7 +119,7 @@ func httpPut(client *http.Client, url string, key string, sendBytes []byte) erro
 		return err
 	}
 	defer res.Body.Close()
-	_, err = ioutil.ReadAll(res.Body)
+	_, err = io.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}
