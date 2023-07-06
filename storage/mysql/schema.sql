@@ -202,6 +202,8 @@ CREATE TABLE nano_enrollment_queue (
 
     PRIMARY KEY (id, command_uuid),
 
+    INDEX (priority DESC, created_at),
+
     FOREIGN KEY (id)
         REFERENCES nano_enrollments (id)
         ON DELETE CASCADE ON UPDATE CASCADE,
