@@ -150,10 +150,10 @@ func (s *MySQLStorage) RetrieveNextCommand(r *mdm.Request, skipNotNow bool) (*md
 	err := s.db.QueryRowContext(
 		r.Context, `
 SELECT c.command_uuid, c.request_type, c.command
-FROM enrollment_queue AS q
-    INNER JOIN commands AS c
+FROM nano_enrollment_queue AS q
+    INNER JOIN nano_commands AS c
         ON q.command_uuid = c.command_uuid
-    LEFT JOIN command_results r
+    LEFT JOIN nano_command_results r
         ON r.command_uuid = q.command_uuid AND r.id = q.id
 WHERE q.id = ?
     AND q.active = 1
