@@ -1,9 +1,11 @@
 package service
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/micromdm/nanomdm/mdm"
 
@@ -25,6 +27,18 @@ func (e *HTTPStatusError) Unwrap() error {
 
 func NewHTTPStatusError(status int, err error) *HTTPStatusError {
 	return &HTTPStatusError{Status: status, Err: err}
+}
+
+// IsNotFound returns true if the error is `sql.ErrNoRows` or `os.ErrNotExist`.
+func IsNotFound(err error) bool {
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		return true
+	case errors.Is(err, os.ErrNotExist):
+		return true
+	default:
+		return false
+	}
 }
 
 // CheckinRequest is a simple adapter that takes the raw check-in bodyBytes
@@ -62,16 +76,17 @@ func CheckinRequest(svc Checkin, r *mdm.Request, bodyBytes []byte) ([]byte, erro
 		// https://developer.apple.com/documentation/devicemanagement/get_bootstrap_token
 		var bsToken *mdm.BootstrapToken
 		bsToken, err = svc.GetBootstrapToken(r, m)
-		if err != nil {
-			err = fmt.Errorf("getbootstraptoken service: %w", err)
-			break
+		if err != nil && !IsNotFound(err) {
+			return nil, fmt.Errorf("getbootstraptoken service: %w", err)
 		}
-		// If there is no bsToken, return an empty body
-		if bsToken != nil {
-			respBytes, err = plist.Marshal(bsToken)
-			if err != nil {
-				err = fmt.Errorf("marshal bootstrap token: %w", err)
-			}
+		if IsNotFound(err) || bsToken == nil {
+			// Apple docs say the server should return no data and no error
+			// if bootstrap token is not available
+			return []byte{}, nil
+		}
+		respBytes, err = plist.Marshal(bsToken)
+		if err != nil {
+			err = fmt.Errorf("marshal bootstrap token: %w", err)
 		}
 	case *mdm.DeclarativeManagement:
 		respBytes, err = svc.DeclarativeManagement(r, m)
