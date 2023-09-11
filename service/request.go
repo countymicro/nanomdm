@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/micromdm/nanomdm/mdm"
-	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/groob/plist"
@@ -39,8 +38,6 @@ func IsNotFound(err error) bool {
 	case errors.Is(err, os.ErrNotExist):
 		return true
 	case errors.Is(err, pgx.ErrNoRows):
-		return true
-	case pgxscan.NotFound(err):
 		return true
 	default:
 		return false
